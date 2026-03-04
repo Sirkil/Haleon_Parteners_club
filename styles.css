@@ -53,7 +53,7 @@ a { color: var(--green); text-decoration: none; font-weight: 600; cursor: pointe
 }
 
 /* ── Views ── */
-.view { display: none; flex: 1; flex-direction: column; overflow-y: auto; }
+.view { display: none; flex: 1; flex-direction: column; overflow-y: auto; padding-bottom: 76px; }
 .view.active { display: flex; }
 
 /* ════════════════════════════════════════
@@ -144,7 +144,9 @@ a { color: var(--green); text-decoration: none; font-weight: 600; cursor: pointe
    ════════════════════════════════════════ */
 .bottom-nav {
   display: none; background: var(--surface);
-  border-top: 1px solid var(--border); padding: 10px 0 16px; flex-shrink: 0;
+  border-top: 1px solid var(--border); padding: 10px 0 16px;
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 420px; z-index: 500;
 }
 .bottom-nav.visible { display: flex; }
 
@@ -452,10 +454,18 @@ a { color: var(--green); text-decoration: none; font-weight: 600; cursor: pointe
 /* ════════════════════════════════════════
    PROFILE
    ════════════════════════════════════════ */
-.profile-view { padding: 28px 20px 24px; flex-direction: column; }
+.profile-view { padding: 20px 20px 0; flex-direction: column; }
 
 /* Flip Card */
-.card-scene { perspective: 1000px; height: 210px; margin-bottom: 28px; cursor: pointer; }
+.card-scene {
+  perspective: 1000px;
+  width: 100%;
+  /* Credit card ratio: 85.6mm × 53.98mm = 1.586:1 */
+  aspect-ratio: 1.586 / 1;
+  margin-bottom: 24px;
+  cursor: pointer;
+  min-height: 0;
+}
 
 .card-inner {
   width: 100%; height: 100%; position: relative;
@@ -537,8 +547,9 @@ a { color: var(--green); text-decoration: none; font-weight: 600; cursor: pointe
 
 .qr-box {
   width: 72px; height: 72px; background: white; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 4px;
+  display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 3px; flex-shrink: 0;
 }
+.qr-box img { width: 66px; height: 66px; display: block; border-radius: 3px; }
 .qr-box svg { width: 64px; height: 64px; }
 
 .card-back-watermark {
@@ -643,11 +654,11 @@ a { color: var(--green); text-decoration: none; font-weight: 600; cursor: pointe
 
 /* QR Dialog */
 .qr-dialog-code {
-  margin: 16px auto;
-  width: 160px; height: 160px;
+  margin: 14px auto 8px;
+  width: 200px; height: 200px;
   background: white; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  padding: 8px;
+  padding: 6px;
 }
 .qr-dialog-code svg { width: 144px; height: 144px; }
 .qr-dialog-code canvas { width: 144px !important; height: 144px !important; }
@@ -764,4 +775,56 @@ a { color: var(--green); text-decoration: none; font-weight: 600; cursor: pointe
   background: white; border-radius: 12px;
   width: 196px; height: 196px;
   display: flex; align-items: center; justify-content: center; padding: 8px;
+}
+
+/* ════════════════════════════════════════
+   LOADING OVERLAY
+   ════════════════════════════════════════ */
+.loading-overlay {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 99999; gap: 20px;
+}
+.loading-logo {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-size: 2.4rem; color: var(--text); letter-spacing: -1px;
+}
+.loading-logo span { color: var(--green); }
+.loading-spinner {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 3px solid var(--border); border-top-color: var(--green);
+  animation: loadSpin 0.8s linear infinite;
+}
+@keyframes loadSpin { to { transform: rotate(360deg); } }
+
+/* ════════════════════════════════════════
+   AUTH ERRORS / SYNC
+   ════════════════════════════════════════ */
+.auth-error {
+  color: #f87171; font-size: 0.83rem; min-height: 18px;
+  margin: -4px 0 8px; text-align: center;
+}
+.sync-status {
+  font-size: 0.78rem; color: var(--green); text-align: center;
+  margin-top: 12px; opacity: 0; transition: opacity 0.4s;
+}
+
+/* ════════════════════════════════════════
+   WELCOME DIALOG
+   ════════════════════════════════════════ */
+#welcome-dialog .dialog-box {
+  background: linear-gradient(160deg, var(--surface) 0%, #0d1a12 100%);
+  border-color: rgba(74,222,128,0.35);
+}
+
+/* ════════════════════════════════════════
+   PROFILE BADGE ITEMS
+   ════════════════════════════════════════ */
+.profile-badge-item {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--green-dim); border: 1px solid rgba(74,222,128,0.3);
+  color: var(--green); border-radius: 20px;
+  padding: 5px 12px; font-size: 0.82rem; font-weight: 600;
+  margin: 4px 4px 4px 0;
 }

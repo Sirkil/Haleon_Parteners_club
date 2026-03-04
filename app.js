@@ -357,6 +357,31 @@ function updateBadgeStates() {
   });
 }
 
+
+// ── Auto-check badges whenever score changes ──
+function checkBadgeUnlocks() {
+  const newlyUnlocked = badgeDefs.filter(b =>
+    !state.claimedBadges.includes(b.id) && state.score >= b.pts
+  );
+  if (newlyUnlocked.length === 0) return;
+
+  newlyUnlocked.forEach((b, i) => {
+    state.claimedBadges.push(b.id);
+  });
+  updateBadgeStates();
+
+  // Show dialog for the first newly unlocked badge (with delay so correct-dialog shows first)
+  const b = newlyUnlocked[0];
+  setTimeout(() => {
+    document.getElementById('badge-dialog-icon').textContent = b.icon;
+    document.getElementById('badge-dialog-name').textContent = b.name;
+    document.getElementById('badge-dialog').classList.add('open');
+    launchConfetti(4000);
+  }, 2200);
+
+  saveToFirebase();
+}
+
 async function tryClaimBadge(id) {
   const b = badgeDefs[id];
   if (state.claimedBadges.includes(id) || state.score < b.pts) return;
@@ -375,7 +400,10 @@ function closeWelcomeDialog() {
 
 function closeBadgeDialog() {
   document.getElementById('badge-dialog').classList.remove('open');
-  updateProfilePage();
+  updateHomeUI();
+  if (document.getElementById('view-profile').classList.contains('active')) {
+    updateProfilePage();
+  }
 }
 
 // ════════════════════════════════════════
@@ -444,6 +472,8 @@ async function answerQuizScreen(qi, ci) {
     state.score += 100;
     state.quizzesCompleted++;
     await saveToFirebase();
+    // Check badge unlocks after score update
+    checkBadgeUnlocks();
     setTimeout(() => {
       document.getElementById('correct-dialog').classList.add('open');
       launchConfetti(3000);
@@ -539,7 +569,18 @@ function openRedeemQR(key, title, pts) {
   });
 
   const qrUrl = makeQRUrl(payload, 200);
-  document.getElementById('qr-dialog-img').src = qrUrl;
+  const imgEl = document.getElementById('qr-dialog-img');
+  imgEl.style.opacity = '0.2';
+  imgEl.src = '';
+  // Small timeout lets dialog render first
+  setTimeout(() => {
+    imgEl.onload  = () => { imgEl.style.opacity = '1'; };
+    imgEl.onerror = () => {
+      imgEl.style.opacity = '1';
+      imgEl.alt = 'QR failed — check connection';
+    };
+    imgEl.src = qrUrl + '&t=' + Date.now();
+  }, 80);
 
   // Countdown
   let secs = 60;
@@ -602,7 +643,12 @@ function updateProfilePage() {
     phone:    state.user.phone,
     pharmacy: state.user.pharmacy,
   });
-  document.getElementById('card-qr-img').src = makeQRUrl(memberPayload, 80);
+  const cardImg = document.getElementById('card-qr-img');
+  cardImg.src = '';
+  cardImg.onload  = () => { cardImg.style.opacity = '1'; };
+  cardImg.onerror = () => { cardImg.style.opacity = '0.5'; };
+  cardImg.style.opacity = '0';
+  setTimeout(() => { cardImg.src = makeQRUrl(memberPayload, 80) + '&t=' + Date.now(); }, 60);
 
   // Stats
   document.getElementById('stat-pts').textContent     = state.score.toLocaleString();
