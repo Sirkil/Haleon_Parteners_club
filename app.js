@@ -9,7 +9,7 @@
 //    paste the URL here.
 // ═══════════════════════════════════════════════════════
 const SHEETS_WEBHOOK =
-  "https://script.google.com/macros/s/AKfycbzy7ieNZHklk8TftWLPD6w_R7DV9eX0JRlPAq1SdhLc_MMtIOlnm2pirI-tjzGGHNZ-/exec";
+  "https://script.google.com/macros/s/AKfycbzXv_YPKLL1UUW00yZ07DvlCDgTB_bdf3Cqlb48QPVoG1e4BEeE5mPACs-9tnw7cYkw/exec";
 
 // ── State (in-memory mirror of Firebase) ──
 const state = {
@@ -374,6 +374,7 @@ function syncToSheets(uid, data) {
     quizzesCompleted: data.quizzesCompleted || 0,
     tier: data.tier || "Student",
     badges: badgeNames,
+    badgesCount:       (data.claimedBadges || []).length,
     lastUpdated: data.lastUpdated || new Date().toISOString(),
   };
   // Fire-and-forget
@@ -640,74 +641,98 @@ function renderRewardsPage() {
   });
 }
 
-// ── Redeem QR (uses qrserver.com API) ──
 let qrTimerInterval = null;
+let redeemUnsubscribe = null;
+let redeemOpenedAt   = 0;
 
 function openRedeemQR(key, title, pts) {
-  document.getElementById("qr-dialog-title").textContent = "Redeem: " + title;
+  redeemOpenedAt = Date.now();
+  document.getElementById('qr-dialog-title').textContent = 'Redeem: ' + title;
 
   // Build payload embedded in QR
   const payload = JSON.stringify({
-    uid: state.uid,
-    memberId: state.user?.memberId || "",
-    user: state.user?.name || "",
-    email: state.user?.email || "",
-    phone: state.user?.phone || "",
-    pharmacy: state.user?.pharmacy || "",
-    reward: title,
+    uid:      state.uid,
+    memberId: state.user?.memberId || '',
+    name:     state.user?.name    || '',
+    email:    state.user?.email   || '',
+    phone:    state.user?.phone   || '',
+    pharmacy: state.user?.pharmacy || '',
+    reward:   title,
     pts,
     key,
     ts: Date.now(),
   });
 
   const qrUrl = makeQRUrl(payload, 200);
-  const imgEl = document.getElementById("qr-dialog-img");
-  imgEl.style.opacity = "0.2";
-  imgEl.src = "";
-  // Small timeout lets dialog render first
+  const imgEl = document.getElementById('qr-dialog-img');
+  imgEl.style.opacity = '0.2';
+  imgEl.src = '';
   setTimeout(() => {
-    imgEl.onload = () => {
-      imgEl.style.opacity = "1";
-    };
-    imgEl.onerror = () => {
-      imgEl.style.opacity = "1";
-      imgEl.alt = "QR failed — check connection";
-    };
-    imgEl.src = qrUrl + "&t=" + Date.now();
+    imgEl.onload  = () => { imgEl.style.opacity = '1'; };
+    imgEl.onerror = () => { imgEl.style.opacity = '1'; };
+    imgEl.src = qrUrl + '&t=' + Date.now();
   }, 80);
 
   // Countdown
   let secs = 60;
-  document.getElementById("qr-timer").textContent = secs;
+  document.getElementById('qr-timer').textContent = secs;
   if (qrTimerInterval) clearInterval(qrTimerInterval);
   qrTimerInterval = setInterval(() => {
     secs--;
-    const el = document.getElementById("qr-timer");
+    const el = document.getElementById('qr-timer');
     if (el) el.textContent = secs;
-    if (secs <= 0) {
-      clearInterval(qrTimerInterval);
-      closeQRDialog();
-    }
+    if (secs <= 0) { clearInterval(qrTimerInterval); closeQRDialog(); }
   }, 1000);
 
-  document.getElementById("qr-dialog").classList.add("open");
+  document.getElementById('qr-dialog').classList.add('open');
+
+  // Watch Firestore for usher confirmation
+  stopRedeemListener();
+  if (window._fb?.onSnapshot && state.uid) {
+    const docRef = window._fb.doc(window._fb.db, 'users', state.uid);
+    redeemUnsubscribe = window._fb.onSnapshot(docRef, snap => {
+      if (!snap.exists()) return;
+      const d = snap.data();
+      if (d.lastRedemptionAt && d.lastRedemptionAt > redeemOpenedAt) {
+        stopRedeemListener();
+        showRedeemSuccess(
+          d.lastRedemptionReward || title,
+          d.lastRedemptionPts   || pts,
+          d.score ?? state.score
+        );
+      }
+    });
+  }
+}
+
+function stopRedeemListener() {
+  if (redeemUnsubscribe) { redeemUnsubscribe(); redeemUnsubscribe = null; }
 }
 
 function closeQRDialog() {
+  stopRedeemListener();
   if (qrTimerInterval) clearInterval(qrTimerInterval);
-  document.getElementById("qr-dialog").classList.remove("open");
+  document.getElementById('qr-dialog').classList.remove('open');
 }
 
-// Deduct points after usher confirms (called via postMessage from usher.html)
-window.addEventListener("message", async (e) => {
-  if (e.data?.type === "HALEON_REDEEM" && e.data.uid === state.uid) {
-    state.score = Math.max(0, state.score - e.data.pts);
-    await saveToFirebase();
-    updateHomeUI();
-    renderRewardsPage();
-    showToast("Reward redeemed! −" + e.data.pts + " pts");
+function showRedeemSuccess(reward, pts, newScore) {
+  closeQRDialog();
+  state.score = newScore;
+  updateHomeUI();
+  renderRewardsPage();
+  if (document.getElementById('view-profile')?.classList.contains('active')) {
+    updateProfilePage();
   }
-});
+  document.getElementById('redeem-success-reward').textContent = reward;
+  document.getElementById('redeem-success-pts').textContent =
+    '−' + pts + ' pts deducted · New balance: ' + newScore.toLocaleString() + ' pts';
+  document.getElementById('redeem-success-dialog').classList.add('open');
+  launchConfetti(3000);
+}
+
+function closeRedeemSuccessDialog() {
+  document.getElementById('redeem-success-dialog').classList.remove('open');
+}
 
 // ════════════════════════════════════════
 // PROFILE
@@ -718,70 +743,51 @@ function updateProfilePage() {
   const tier = getTier();
 
   // Card skins
-  document.getElementById("card-face-front").className =
-    `card-face card-front ${tier.cls}`;
-  document.getElementById("card-face-back").className =
-    `card-face card-back-face ${tier.cls}`;
+  document.getElementById('card-face-front').className = `card-face card-front ${tier.cls}`;
+  document.getElementById('card-face-back').className  = `card-face card-back-face ${tier.cls}`;
 
-  document.getElementById("card-tier-label").textContent = tier.name + ".";
-  document.getElementById("card-watermark").textContent = tier.name + ".";
-  document.getElementById("card-back-watermark").textContent = tier.name + ".";
-  document.getElementById("card-name-front").textContent = state.user.name;
-  document.getElementById("card-email-front").textContent = state.user.email;
-  document.getElementById("card-name-back").textContent = state.user.name;
-  document.getElementById("card-email-back").textContent = state.user.email;
-  document.getElementById("card-num-front").textContent =
-    state.user.memberId || "——";
-  document.getElementById("card-num-back").textContent =
-    state.user.memberId || "——";
+  // Front text
+  document.getElementById('card-tier-label').textContent = tier.name + '.';
+  document.getElementById('card-watermark').textContent  = tier.name + '.';
 
-  // Card back QR — encodes user identity info
+  // Back text
+  document.getElementById('card-back-watermark').textContent = tier.name + '.';
+  document.getElementById('card-name-back').textContent = state.user.name;
+  document.getElementById('card-num-back').textContent  = state.user.memberId || '——';
+
+  // Card back QR — encode full identity (160px for legibility)
   const memberPayload = JSON.stringify({
-    uid: state.uid,
+    uid:      state.uid,
     memberId: state.user.memberId,
-    name: state.user.name,
-    email: state.user.email,
-    phone: state.user.phone,
+    name:     state.user.name,
+    email:    state.user.email,
+    phone:    state.user.phone,
     pharmacy: state.user.pharmacy,
   });
-  const cardImg = document.getElementById("card-qr-img");
-  cardImg.src = "";
-  cardImg.onload = () => {
-    cardImg.style.opacity = "1";
-  };
-  cardImg.onerror = () => {
-    cardImg.style.opacity = "0.5";
-  };
-  cardImg.style.opacity = "0";
-  setTimeout(() => {
-    cardImg.src = makeQRUrl(memberPayload, 80) + "&t=" + Date.now();
-  }, 60);
+  const cardImg = document.getElementById('card-qr-img');
+  cardImg.src = makeQRUrl(memberPayload, 160) + '&t=' + Date.now();
+  cardImg.style.opacity = '1';
 
   // Stats
-  document.getElementById("stat-pts").textContent =
-    state.score.toLocaleString();
-  document.getElementById("stat-quizzes").textContent = state.quizzesCompleted;
-  document.getElementById("stat-tier").textContent = tier.name;
+  document.getElementById('stat-pts').textContent     = state.score.toLocaleString();
+  document.getElementById('stat-quizzes').textContent = state.quizzesCompleted;
+  document.getElementById('stat-tier').textContent    = tier.name;
 
   // Info
-  document.getElementById("info-name").textContent = state.user.name;
-  document.getElementById("info-email").textContent = state.user.email;
-  document.getElementById("info-phone").textContent = state.user.phone || "—";
-  document.getElementById("info-pharmacy").textContent =
-    state.user.pharmacy || "—";
+  document.getElementById('info-name').textContent     = state.user.name;
+  document.getElementById('info-email').textContent    = state.user.email;
+  document.getElementById('info-phone').textContent    = state.user.phone    || '—';
+  document.getElementById('info-pharmacy').textContent = state.user.pharmacy || '—';
 
   // Badges
-  const badgesEl = document.getElementById("profile-badges");
+  const badgesEl = document.getElementById('profile-badges');
   if (state.claimedBadges.length === 0) {
-    badgesEl.innerHTML =
-      '<div class="profile-badge-empty">No badges claimed yet. Earn points to unlock!</div>';
+    badgesEl.innerHTML = '<div class="profile-badge-empty">No badges claimed yet. Earn points to unlock!</div>';
   } else {
-    badgesEl.innerHTML = state.claimedBadges
-      .map((id) => {
-        const b = badgeDefs[id];
-        return `<div class="profile-badge-item">${b.icon} ${b.name}</div>`;
-      })
-      .join("");
+    badgesEl.innerHTML = state.claimedBadges.map(id => {
+      const b = badgeDefs.find(d => d.id === id);
+      return b ? `<div class="profile-badge-item">${b.icon} ${b.name}</div>` : '';
+    }).join('');
   }
 }
 

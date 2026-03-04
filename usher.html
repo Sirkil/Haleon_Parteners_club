@@ -541,9 +541,17 @@
         <!-- Hero -->
         <div class="member-hero">
           <div class="avatar" id="m-avatar">?</div>
-          <div>
+          <div style="flex:1">
             <div class="member-name" id="m-name">—</div>
-            <div class="member-badge" id="m-id">——</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap">
+              <div class="member-badge" id="m-id">——</div>
+              <div id="m-tier-chip" style="
+                display:inline-block;font-size:0.68rem;font-weight:700;letter-spacing:2px;
+                padding:2px 10px;border-radius:20px;text-transform:uppercase;
+                background:rgba(74,222,128,0.15);color:var(--green);
+                border:1px solid rgba(74,222,128,0.35);
+              ">—</div>
+            </div>
           </div>
         </div>
 
@@ -850,7 +858,10 @@
         document.getElementById("m-email").textContent = m.email || "—";
         document.getElementById("m-phone").textContent = m.phone || "—";
         document.getElementById("m-pharmacy").textContent = m.pharmacy || "—";
-        document.getElementById("m-tier").textContent = m.tier || "—";
+        document.getElementById("m-tier").textContent    = m.tier     || "—";
+        const tierChip = document.getElementById("m-tier-chip");
+        if (tierChip) tierChip.textContent = m.tier || "—";
+
 
         const rewardSec = document.getElementById("reward-section");
         const pickerSec = document.getElementById("reward-picker");
@@ -1037,59 +1048,41 @@
           await updateDoc(doc(db, "users", uid), {
             score: newScore,
             tier: newTier,
-            lastUpdated: new Date().toISOString(),
+            lastUpdated:          new Date().toISOString(),
+            lastRedemptionAt:     Date.now(),
+            lastRedemptionReward: scanned.reward,
+            lastRedemptionPts:    pts,
           });
 
-          // Also sync to Google Sheets
+          // Sync to Google Sheets
           syncRedemptionToSheets(uid, scanned, snap.data(), newScore, newTier);
 
           // Update live display
-          document.getElementById("r-current").textContent =
-            newScore.toLocaleString() + " pts";
-          document.getElementById("r-after").textContent =
-            newScore.toLocaleString() + " pts";
-          document.getElementById("m-tier").textContent = newTier;
+          document.getElementById("r-current").textContent = newScore.toLocaleString() + " pts";
+          document.getElementById("r-after").textContent   = newScore.toLocaleString() + " pts";
+          document.getElementById("m-tier").textContent    = newTier;
+          const tierChip = document.getElementById("m-tier-chip");
+          if (tierChip) tierChip.textContent = newTier;
           if (currentMember) currentMember.livePts = newScore;
 
-          showAlert(
-            "panel-alert",
-            "success",
-            '✅ Confirmed!\n"' +
-              scanned.reward +
-              '" given to ' +
-              (scanned.name || scanned.user || "member") +
-              "\n−" +
-              pts +
-              " pts deducted · New balance: " +
-              newScore.toLocaleString() +
-              " pts",
+          showAlert("panel-alert", "success",
+            '\u2705 Confirmed! "' + scanned.reward + '" given to ' + (scanned.name || "member") +
+            '\n\u2212' + pts + ' pts deducted \u00b7 New balance: ' + newScore.toLocaleString() + ' pts'
           );
-          btn.textContent = "✓ Done";
+          btn.textContent = "\u2713 Done";
           document.getElementById("btn-back-picker").style.display = "none";
         } catch (err) {
-          if (err.message === "not-found") {
-            showAlert(
-              "panel-alert",
-              "error",
-              "❌ Member not found in database.",
-            );
-            btn.textContent = "Error";
-          } else {
-            // Offline fallback
-            showAlert(
-              "panel-alert",
-              "success",
-              "✅ Manually confirmed (offline).\nPlease record:\nMember: " +
-                (scanned.name || scanned.user) +
-                "\nReward: " +
-                scanned.reward +
-                "\nDeduct: " +
-                scanned.pts +
-                " pts",
-            );
-            btn.textContent = "✓ Confirmed";
-          }
+          showAlert("panel-alert", "error",
+            err.message === "not-found"
+              ? "\u274c Member not found in database."
+              : "\u274c Error connecting to server. Please check connection and try again."
+          );
+          btn.textContent = "Error";
+          btn.disabled = false;
         }
+
+
+
       }
 
       // ═══════════════════════════════════════

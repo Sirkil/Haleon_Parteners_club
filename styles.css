@@ -772,12 +772,14 @@ a {
 .card-scene {
   perspective: 1000px;
   width: 100%;
-  /* Credit card ratio: 85.6mm × 53.98mm = 1.586:1 */
   aspect-ratio: 1.586 / 1;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   cursor: pointer;
-  min-height: 0;
+  flex-shrink: 0;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
+.card-scene:focus { outline: none; box-shadow: none; }
 
 .card-inner {
   width: 100%;
@@ -804,194 +806,117 @@ a {
   transform: rotateY(180deg);
 }
 
-/* Tier skins */
-.card-student {
-  background: linear-gradient(135deg, #b0b8b0 0%, #d0d8d0 50%, #a0a8a0 100%);
+/* Tier body gradients — updated */
+.card-student  { background: linear-gradient(155deg,#c0ccc0 0%,#dde8dd 55%,#aebcae 100%); }
+.card-community{ background: linear-gradient(155deg,#2c3748 0%,#3d5060 55%,#1e2c3c 100%); }
+.card-owner    { background: linear-gradient(155deg,#a8b8a0 0%,#c0d0b4 55%,#96a890 100%); }
+.card-silver   { background: linear-gradient(155deg,#2c3748 0%,#3d5060 55%,#1e2c3c 100%); }
+.card-gold     { background: linear-gradient(155deg,#a8b8a0 0%,#c0d0b4 55%,#96a890 100%); }
+.card-platinum { background: linear-gradient(155deg,#0d1117 0%,#1a2030 55%,#090c12 100%); }
+
+/* ─── CARD FRONT (cf-*) ─── */
+.cf-content {
+  width:100%; height:100%;
+  display:flex; flex-direction:column; justify-content:space-between;
+  padding:14px 16px; position:relative; overflow:hidden;
 }
-.card-community {
-  background: linear-gradient(135deg, #7a8490 0%, #b0bac4 50%, #6e7880 100%);
+.cf-header { display:flex; align-items:center; gap:10px; z-index:1; position:relative; }
+.cf-logo { line-height:1.2; }
+.cf-haleon {
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900; font-size:0.92rem; letter-spacing:0.5px;
 }
-.card-owner {
-  background: linear-gradient(135deg, #8a7a30 0%, #d4b84a 50%, #a08030 100%);
+.cf-rewards {
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700; font-size:0.68rem; letter-spacing:1.5px;
 }
-/* keep old names as aliases */
-.card-silver {
-  background: linear-gradient(135deg, #7a8490 0%, #b0bac4 50%, #6e7880 100%);
+.cf-hdivide { width:1px; height:26px; flex-shrink:0; }
+.cf-tier {
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:800; font-size:1rem; letter-spacing:0.5px;
 }
-.card-gold {
-  background: linear-gradient(135deg, #8a7a30 0%, #d4b84a 50%, #a08030 100%);
-}
-.card-platinum {
-  background: linear-gradient(135deg, #1a1e24 0%, #2e343e 50%, #12161a 100%);
+.cf-watermark {
+  position:absolute; bottom:8px; left:12px;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900; font-size:3rem; letter-spacing:-2px;
+  line-height:1; pointer-events:none; z-index:0;
 }
 
-/* Card Front */
-.card-front-content {
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
+/* ─── CARD BACK (cb-*) ─── */
+.cb-content {
+  width:100%; height:100%;
+  display:flex; flex-direction:column; justify-content:space-between;
+  padding:12px 14px 0; position:relative; overflow:hidden;
 }
-.card-brand-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.cb-top { display:flex; justify-content:space-between; align-items:flex-start; z-index:1; }
+.cb-brand { line-height:1.25; }
+.cb-haleon {
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900; font-size:0.75rem; letter-spacing:0.5px;
 }
-
-.card-logo {
-  font-family: "Barlow Condensed", sans-serif;
-  font-weight: 900;
-  font-size: 0.95rem;
-  color: rgba(0, 0, 0, 0.8);
-  line-height: 1.2;
+.cb-rewards {
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700; font-size:0.6rem; letter-spacing:1px;
 }
-.card-logo .plus {
-  color: rgba(0, 80, 20, 0.8);
+.cb-tagline { font-size:0.52rem; line-height:1.4; margin-top:3px; opacity:0.8; }
+.cb-qr {
+  width:72px; height:72px; background:#fff; border-radius:5px;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden; padding:3px; flex-shrink:0;
 }
-
-.card-divider {
-  width: 1px;
-  height: 28px;
-  background: rgba(0, 0, 0, 0.25);
+.cb-qr img { width:66px; height:66px; display:block; }
+.cb-watermark {
+  position:absolute; bottom:30px; left:10px;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900; font-size:2.4rem; letter-spacing:-2px;
+  line-height:1; pointer-events:none;
 }
-
-.card-tier-label {
-  font-family: "Barlow Condensed", sans-serif;
-  font-weight: 700;
-  font-size: 1rem;
-  color: rgba(0, 0, 0, 0.75);
+.cb-footer {
+  display:flex; z-index:1; position:relative;
+  height:34px; flex-shrink:0;
+  border-radius:0 0 14px 14px; overflow:hidden;
 }
-
-.card-watermark {
-  position: absolute;
-  bottom: 14px;
-  left: 16px;
-  font-family: "Barlow Condensed", sans-serif;
-  font-weight: 900;
-  font-size: 3.2rem;
-  color: rgba(0, 0, 0, 0.12);
-  line-height: 1;
-  pointer-events: none;
-  letter-spacing: -1px;
+.cb-name-cell {
+  flex:1; display:flex; align-items:center; padding:0 12px;
+  font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.82rem;
+}
+.cb-id-cell {
+  width:88px; display:flex; align-items:center; justify-content:center;
+  font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.82rem;
 }
 
-.card-name-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  z-index: 1;
-}
+/* ─── Tier-specific colours ─── */
+/* Student */
+.card-student .cf-haleon,.card-student .cf-rewards,.card-student .cf-tier { color:rgba(0,0,0,0.78); }
+.card-student .cf-plus    { color:#167a40; }
+.card-student .cf-hdivide { background:rgba(0,0,0,0.25); }
+.card-student .cf-watermark { color:rgba(0,0,0,0.1); }
+.card-student .cb-haleon,.card-student .cb-rewards,.card-student .cb-tagline { color:rgba(0,0,0,0.7); }
+.card-student .cb-plus    { color:#167a40; }
+.card-student .cb-watermark { color:rgba(0,0,0,0.1); }
+.card-student .cb-name-cell { background:#4ade80; color:rgba(0,0,0,0.85); }
+.card-student .cb-id-cell   { background:rgba(255,255,255,0.88); color:rgba(0,0,0,0.8); }
+/* Community (Silver) */
+.card-community .cf-haleon,.card-community .cf-rewards,.card-community .cf-tier { color:rgba(255,255,255,0.88); }
+.card-community .cf-plus    { color:#9ca3af; }
+.card-community .cf-hdivide { background:rgba(255,255,255,0.3); }
+.card-community .cf-watermark { color:rgba(255,255,255,0.08); }
+.card-community .cb-haleon,.card-community .cb-rewards,.card-community .cb-tagline { color:rgba(255,255,255,0.75); }
+.card-community .cb-plus    { color:#9ca3af; }
+.card-community .cb-watermark { color:rgba(255,255,255,0.08); }
+.card-community .cb-name-cell { background:#4b5563; color:rgba(255,255,255,0.9); }
+.card-community .cb-id-cell   { background:rgba(255,255,255,0.15); color:rgba(255,255,255,0.85); }
+/* Owner (Gold/Lime) */
+.card-owner .cf-haleon,.card-owner .cf-rewards,.card-owner .cf-tier { color:rgba(0,0,0,0.78); }
+.card-owner .cf-plus    { color:#3a6b0a; }
+.card-owner .cf-hdivide { background:rgba(0,0,0,0.25); }
+.card-owner .cf-watermark { color:rgba(0,0,0,0.1); }
+.card-owner .cb-haleon,.card-owner .cb-rewards,.card-owner .cb-tagline { color:rgba(0,0,0,0.7); }
+.card-owner .cb-plus    { color:#3a6b0a; }
+.card-owner .cb-watermark { color:rgba(0,0,0,0.1); }
+.card-owner .cb-name-cell { background:#a3e635; color:rgba(0,0,0,0.85); }
+.card-owner .cb-id-cell   { background:rgba(255,255,255,0.88); color:rgba(0,0,0,0.8); }
 
-.card-holder-name {
-  font-family: "Barlow Condensed", sans-serif;
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: rgba(0, 0, 0, 0.85);
-}
-.card-holder-email {
-  font-size: 0.72rem;
-  color: rgba(0, 0, 0, 0.6);
-  margin-top: 2px;
-}
-
-.card-num {
-  font-family: "Barlow Condensed", sans-serif;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.6);
-  background: rgba(0, 0, 0, 0.12);
-  padding: 5px 12px;
-  border-radius: 6px;
-}
-
-/* Card Back */
-.card-back-content {
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
-}
-.card-back-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.card-back-brand {
-  font-family: "Barlow Condensed", sans-serif;
-  font-weight: 700;
-  font-size: 0.75rem;
-  color: rgba(0, 0, 0, 0.6);
-  line-height: 1.4;
-}
-.card-back-tagline {
-  font-size: 0.65rem;
-  color: rgba(0, 0, 0, 0.5);
-  margin-top: 4px;
-}
-
-.qr-box {
-  width: 72px;
-  height: 72px;
-  background: white;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 3px;
-  flex-shrink: 0;
-}
-.qr-box img {
-  width: 66px;
-  height: 66px;
-  display: block;
-  border-radius: 3px;
-}
-.qr-box svg {
-  width: 64px;
-  height: 64px;
-}
-
-.card-back-watermark {
-  position: absolute;
-  bottom: 10px;
-  left: 16px;
-  font-family: "Barlow Condensed", sans-serif;
-  font-weight: 900;
-  font-size: 2.4rem;
-  color: rgba(0, 0, 0, 0.1);
-  pointer-events: none;
-  letter-spacing: -1px;
-}
-
-.card-back-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  z-index: 1;
-}
-
-.card-email-info {
-  font-family: "Barlow Condensed", sans-serif;
-  font-size: 0.75rem;
-  color: rgba(0, 0, 0, 0.6);
-}
-.card-email-info span {
-  display: block;
-  font-size: 0.85rem;
-  color: rgba(0, 0, 0, 0.8);
-  font-weight: 700;
-}
-.card-email-info strong {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 400;
-}
 
 /* Stats */
 .stats-row {

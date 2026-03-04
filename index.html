@@ -14,7 +14,7 @@
              signInWithEmailAndPassword, signOut,
              onAuthStateChanged }                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc,
-             updateDoc, serverTimestamp }                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+             updateDoc, serverTimestamp, onSnapshot }         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey:            "AIzaSyAmVVQEPpfs_K3AfqfjkAaQUF8foj-WxsU",
@@ -32,7 +32,7 @@
     // Expose to app.js
     window._fb = {
       auth, db,
-      doc, setDoc, getDoc, updateDoc, serverTimestamp,
+      doc, setDoc, getDoc, updateDoc, serverTimestamp, onSnapshot,
       createUserWithEmailAndPassword,
       signInWithEmailAndPassword,
       signOut
@@ -189,7 +189,7 @@
       </div>
     </div>
 
-    <div class="section" style="margin-top:20px;padding-bottom:24px">
+    <div class="section" style="margin-top:20px;padding-bottom:100px">
       <div class="section-title">Rewards Preview</div>
       <div class="rewards-grid">
         <div class="reward-card">
@@ -240,43 +240,43 @@
     <div class="page-title">Membership</div>
     <div class="page-sub" style="margin-bottom:20px">Tap card to flip</div>
 
-    <div class="card-scene" onclick="flipCard()">
+    <div class="card-scene" onclick="flipCard()" tabindex="-1">
       <div class="card-inner" id="card-inner">
+        <!-- Card Front -->
         <div class="card-face card-front card-student" id="card-face-front">
-          <div class="card-front-content">
-            <div class="card-brand-row">
-              <div class="card-logo">HALEON<br><span class="plus">PARTNERS CLUB</span></div>
-              <div class="card-divider"></div>
-              <div class="card-tier-label" id="card-tier-label">Student.</div>
-            </div>
-            <div class="card-watermark" id="card-watermark">Student.</div>
-            <div class="card-name-row">
-              <div>
-                <div class="card-holder-name" id="card-name-front">User Name</div>
-                <div class="card-holder-email" id="card-email-front"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0d787e687f4d68606c6461236e6260">[email&#160;protected]</a></div>
+          <div class="cf-content">
+            <div class="cf-header">
+              <div class="cf-logo">
+                <div class="cf-haleon">HALEON</div>
+                <div class="cf-rewards">REWARDS<span class="cf-plus" id="cf-plus-front">+</span></div>
               </div>
-              <div class="card-num" id="card-num-front">——</div>
+              <div class="cf-hdivide"></div>
+              <div class="cf-tier" id="card-tier-label">Student.</div>
             </div>
+            <div class="cf-watermark" id="card-watermark">Student.</div>
           </div>
         </div>
+        <!-- Card Back -->
         <div class="card-face card-back-face card-student" id="card-face-back">
-          <div class="card-back-content">
-            <div class="card-back-top">
-              <div>
-                <div class="card-back-brand">HALEON<br>PARTNERS CLUB</div>
-                <div class="card-back-tagline">Your partner<br>in everyday health.</div>
+          <div class="cb-content">
+            <div class="cb-top">
+              <div class="cb-brand">
+                <div class="cb-haleon">HALEON</div>
+                <div class="cb-rewards">REWARDS<span class="cb-plus" id="cb-plus-back">+</span></div>
+                <div class="cb-tagline">Your partner in everyday health.</div>
               </div>
-              <div class="qr-box">
-                <img id="card-qr-img" src="" alt="Member QR" style="width:66px;height:66px;border-radius:3px;display:block;transition:opacity 0.3s;" />
+              <div class="cb-qr">
+                <img id="card-qr-img" src="" alt="Member QR" />
               </div>
             </div>
-            <div class="card-back-watermark" id="card-back-watermark">Student.</div>
-            <div class="card-back-bottom">
-              <div class="card-email-info">
+            <div class="cb-watermark" id="card-back-watermark">Student.</div>
+            <div class="cb-footer">
+              <div class="cb-name-cell" id="cb-name-cell">
                 <span id="card-name-back">User Name</span>
-                <strong id="card-email-back"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="daafa9bfa89abfb7bbb3b6f4b9b5b7">[email&#160;protected]</a></strong>
               </div>
-              <div class="card-num" style="background:rgba(0,0,0,0.15);color:rgba(0,0,0,0.6)" id="card-num-back">——</div>
+              <div class="cb-id-cell" id="cb-id-cell">
+                <span id="card-num-back">——</span>
+              </div>
             </div>
           </div>
         </div>
@@ -384,6 +384,17 @@
       <div class="qr-countdown">Scan within <span id="qr-timer">60</span>s</div>
       <div class="dialog-sub">Show this QR to the usher to claim your reward</div>
       <button class="btn-secondary" style="margin-top:12px" onclick="closeQRDialog()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Redemption Success Dialog -->
+  <div class="dialog-overlay" id="redeem-success-dialog">
+    <div class="dialog-box" style="background:linear-gradient(160deg,var(--surface) 0%,#0d1a12 100%);border-color:rgba(74,222,128,0.35);">
+      <div class="dialog-icon">🎁</div>
+      <div class="dialog-title" style="color:var(--green)">Reward Redeemed!</div>
+      <div class="dialog-msg" id="redeem-success-reward">—</div>
+      <div class="dialog-sub" id="redeem-success-pts">—</div>
+      <button class="btn-primary" style="margin-top:16px" onclick="closeRedeemSuccessDialog()">Great! 🎉</button>
     </div>
   </div>
 
