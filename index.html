@@ -242,42 +242,27 @@
 
     <div class="card-scene" onclick="flipCard()" tabindex="-1">
       <div class="card-inner" id="card-inner">
-        <!-- Card Front -->
-        <div class="card-face card-front card-student" id="card-face-front">
-          <div class="cf-content">
-            <div class="cf-header">
-              <div class="cf-logo">
-                <div class="cf-haleon">HALEON</div>
-                <div class="cf-rewards">Partners Club</div>
-              </div>
-              <div class="cf-hdivide"></div>
-              <div class="cf-tier" id="card-tier-label">Student.</div>
-            </div>
-            <div class="cf-watermark" id="card-watermark">Student.</div>
-          </div>
+        <!-- Card Front — pure PNG, no text overlay -->
+        <div class="card-face card-front" id="card-face-front">
+          <img class="card-png-fill" id="card-front-bg" src="" alt="Membership card front" />
         </div>
-        <!-- Card Back -->
-        <div class="card-face card-back-face card-student" id="card-face-back">
-          <div class="cb-content">
-            <div class="cb-top">
-              <div class="cb-brand">
-                <div class="cb-haleon">HALEON</div>
-                <div class="cb-rewards">Partners Club</div>
-                <div class="cb-tagline">Your partner in everyday health.</div>
-              </div>
-              <div class="cb-qr">
-                <img id="card-qr-img" src="" alt="Member QR" />
-              </div>
+        <!-- Card Back — PNG-image-based -->
+        <div class="card-face card-back-face" id="card-face-back">
+          <!-- Background PNG (swapped by JS) -->
+          <img class="card-png-fill" id="card-back-bg" src="" alt="" />
+          <!-- QR code — top-right -->
+          <div class="cb-qr-overlay">
+            <div class="cb-qr">
+              <img id="card-qr-img" src="" alt="Member QR" />
             </div>
-            <div class="cb-watermark" id="card-back-watermark">Student.</div>
-            <div class="cb-footer">
-              <div class="cb-name-cell" id="cb-name-cell">
-                <span id="card-name-back">User Name</span>
-              </div>
-              <div class="cb-id-cell" id="cb-id-cell">
-                <span id="card-num-back">——</span>
-              </div>
-            </div>
+          </div>
+          <!-- Name — bottom-left green band -->
+          <div class="cb-name-overlay" id="cb-name-cell">
+            <span id="card-name-back">User Name</span>
+          </div>
+          <!-- Member ID — bottom-right dark band -->
+          <div class="cb-id-overlay" id="cb-id-cell">
+            <span id="card-num-back">——</span>
           </div>
         </div>
       </div>

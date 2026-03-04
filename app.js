@@ -391,11 +391,26 @@ function syncToSheets(uid, data) {
 // ════════════════════════════════════════
 
 function getTier() {
-  const s = state.score;
-  if (s < 100)  return { name: "Student",  cls: "card-student" };
-  if (s < 300)  return { name: "Silver",   cls: "card-silver" };
-  if (s < 600)  return { name: "Gold",     cls: "card-gold" };
-  return              { name: "Platinum", cls: "card-platinum" };
+  const points = state.score || 0; // ← state.score, not state.user?.points
+
+  if (points >= 400) return {
+    name:  "Pharmacy Owner",
+    cls:   "card-owner",
+    front: "assets/card3_front.png",
+    back:  "assets/card3_back.png"
+  };
+  if (points >= 200) return {
+    name:  "Community Pharmacists",
+    cls:   "card-community",
+    front: "assets/card2_front.png",
+    back:  "assets/card2_back.png"
+  };
+  return {
+    name:  "Student",
+    cls:   "card-student",
+    front: "assets/card1_front.png",
+    back:  "assets/card1_back.png"
+  };
 }
 
 // ════════════════════════════════════════
@@ -412,7 +427,7 @@ function updateHomeUI() {
   document.getElementById("progress-pct").textContent = pct + "%";
   document.getElementById("pts-display").textContent =
     state.score.toLocaleString() + " Points";
-  document.getElementById("tier-badge-home").textContent = tier.name + " Tier";
+  document.getElementById("tier-badge-home").textContent = tier.name;
 
   if (state.user)
     document.getElementById("nav-username").textContent = state.user.name;
@@ -583,6 +598,9 @@ async function answerQuizScreen(qi, ci) {
 function closeCorrectDialog() {
   document.getElementById("correct-dialog").classList.remove("open");
   closeQuizScreen();
+  // Refresh home tier badge + profile card with new score
+  updateHomeUI();
+  updateProfilePage();
 }
 
 function closeWrongDialog() {
@@ -743,20 +761,19 @@ function updateProfilePage() {
   if (!state.user) return;
   const tier = getTier();
 
-  // Card skins
-  document.getElementById('card-face-front').className = `card-face card-front ${tier.cls}`;
-  document.getElementById('card-face-back').className  = `card-face card-back-face ${tier.cls}`;
+  // ── Card FRONT: set PNG source ──
+  const frontBg = document.getElementById('card-front-bg');
+  if (frontBg) frontBg.src = tier.front;
 
-  // Front text
-  document.getElementById('card-tier-label').textContent = tier.name + '.';
-  document.getElementById('card-watermark').textContent  = tier.name + '.';
+  // ── Card BACK: set PNG source ──
+  const backBg = document.getElementById('card-back-bg');
+  if (backBg) backBg.src = tier.back;
 
-  // Back text
-  document.getElementById('card-back-watermark').textContent = tier.name + '.';
+  // ── Overlaid text on back ──
   document.getElementById('card-name-back').textContent = state.user.name;
   document.getElementById('card-num-back').textContent  = state.user.memberId || '——';
 
-  // Card back QR — encode full identity (160px for legibility)
+  // ── Card back QR — encodes full member identity ──
   const memberPayload = JSON.stringify({
     uid:      state.uid,
     memberId: state.user.memberId,
@@ -766,21 +783,22 @@ function updateProfilePage() {
     pharmacy: state.user.pharmacy,
   });
   const cardImg = document.getElementById('card-qr-img');
-  cardImg.src = makeQRUrl(memberPayload, 160) + '&t=' + Date.now();
-  cardImg.style.opacity = '1';
+  if (cardImg) {
+    cardImg.src = makeQRUrl(memberPayload, 160) + '&t=' + Date.now();
+  }
 
-  // Stats
+  // ── Stats row ──
   document.getElementById('stat-pts').textContent     = state.score.toLocaleString();
   document.getElementById('stat-quizzes').textContent = state.quizzesCompleted;
   document.getElementById('stat-tier').textContent    = tier.name;
 
-  // Info
+  // ── Info section ──
   document.getElementById('info-name').textContent     = state.user.name;
   document.getElementById('info-email').textContent    = state.user.email;
   document.getElementById('info-phone').textContent    = state.user.phone    || '—';
   document.getElementById('info-pharmacy').textContent = state.user.pharmacy || '—';
 
-  // Badges
+  // ── Badges ──
   const badgesEl = document.getElementById('profile-badges');
   if (state.claimedBadges.length === 0) {
     badgesEl.innerHTML = '<div class="profile-badge-empty">No badges claimed yet. Earn points to unlock!</div>';
