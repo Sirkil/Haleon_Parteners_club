@@ -7,53 +7,58 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 
-  <!-- ══ FIREBASE SDK (ESM) ══ -->
+  <!-- ══ FIREBASE SDK (ESM) — FIRESTORE ══ -->
   <script type="module">
-    import { initializeApp }                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { initializeApp }                                from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword,
              signInWithEmailAndPassword, signOut,
-             onAuthStateChanged }                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getDatabase, ref, set, get, update, onValue }     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+             onAuthStateChanged }                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc,
+             updateDoc, serverTimestamp }                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // ═══════════════════════════════════════════════════
-    // 🔧 PASTE YOUR FIREBASE CONFIG HERE
-    //    Firebase Console → Project Settings → Your Apps
-    // ═══════════════════════════════════════════════════
-   const firebaseConfig = {
-    apiKey: "AIzaSyAmVVQEPpfs_K3AfqfjkAaQUF8foj-WxsU",
-    authDomain: "haleon-partners-club.firebaseapp.com",
-    projectId: "haleon-partners-club",
-    storageBucket: "haleon-partners-club.firebasestorage.app",
-    messagingSenderId: "1037867331058",
-    appId: "1:1037867331058:web:0777855bac1c681ad88f6b"
-  };
+    const firebaseConfig = {
+      apiKey:            "AIzaSyAmVVQEPpfs_K3AfqfjkAaQUF8foj-WxsU",
+      authDomain:        "haleon-partners-club.firebaseapp.com",
+      projectId:         "haleon-partners-club",
+      storageBucket:     "haleon-partners-club.firebasestorage.app",
+      messagingSenderId: "1037867331058",
+      appId:             "1:1037867331058:web:0777855bac1c681ad88f6b"
+    };
 
     const fbApp = initializeApp(firebaseConfig);
     const auth  = getAuth(fbApp);
-    const db    = getDatabase(fbApp);
+    const db    = getFirestore(fbApp);
 
     // Expose to app.js
     window._fb = {
       auth, db,
-      ref, set, get, update, onValue,
+      doc, setDoc, getDoc, updateDoc, serverTimestamp,
       createUserWithEmailAndPassword,
       signInWithEmailAndPassword,
       signOut
     };
 
-    // Auto-login on refresh
+    // ── Restore session on page reload ──
     onAuthStateChanged(auth, async user => {
-      document.getElementById('loading-overlay').style.display = 'none';
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) overlay.style.display = 'none';
+
       if (user) {
-        const snap = await get(ref(db, 'users/' + user.uid));
-        if (snap.exists()) {
-          window.bootApp(user.uid, snap.val());
-        } else {
-          // Account exists in Auth but no DB record — show login
-          showView('view-login');
+        try {
+          const snap = await getDoc(doc(db, 'users', user.uid));
+          if (snap.exists()) {
+            // Returning user — silent boot, no welcome dialog
+            window.bootApp(user.uid, snap.data(), false);
+          } else {
+            // Auth exists but Firestore doc missing
+            window.showView('view-login');
+          }
+        } catch (err) {
+          console.error('Firestore error on session restore:', err);
+          window.showView('view-login');
         }
       } else {
-        showView('view-login');
+        window.showView('view-login');
       }
     });
   </script>
@@ -248,7 +253,7 @@
             <div class="card-name-row">
               <div>
                 <div class="card-holder-name" id="card-name-front">User Name</div>
-                <div class="card-holder-email" id="card-email-front">user@email.com</div>
+                <div class="card-holder-email" id="card-email-front"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0d787e687f4d68606c6461236e6260">[email&#160;protected]</a></div>
               </div>
               <div class="card-num" id="card-num-front">——</div>
             </div>
@@ -269,7 +274,7 @@
             <div class="card-back-bottom">
               <div class="card-email-info">
                 <span id="card-name-back">User Name</span>
-                <strong id="card-email-back">user@email.com</strong>
+                <strong id="card-email-back"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="daafa9bfa89abfb7bbb3b6f4b9b5b7">[email&#160;protected]</a></strong>
               </div>
               <div class="card-num" style="background:rgba(0,0,0,0.15);color:rgba(0,0,0,0.6)" id="card-num-back">——</div>
             </div>
@@ -322,7 +327,23 @@
     </div>
   </nav>
 
-  <!-- ══ DIALOGS ══ -->
+    <!-- ══ DIALOGS ══ -->
+
+  <!-- Welcome Dialog (shown after registration) -->
+  <div class="dialog-overlay" id="welcome-dialog">
+    <div class="dialog-box" style="position:relative;overflow:hidden;">
+      <div class="dialog-icon">🎉</div>
+      <div class="dialog-title" style="font-size:1.4rem;">Welcome to<br>Haleon Partners Club!</div>
+      <div class="dialog-msg" id="welcome-name" style="margin:10px 0 4px;font-size:1.1rem;"></div>
+      <div class="dialog-sub" id="welcome-email" style="margin-bottom:14px;word-break:break-all;"></div>
+      <div style="background:var(--green-dim);border:1px solid rgba(74,222,128,0.3);border-radius:10px;padding:10px 14px;font-size:0.82rem;color:var(--muted);margin-bottom:16px;">
+        Your account has been registered successfully ✓
+      </div>
+      <button class="btn-primary" onclick="closeWelcomeDialog()">Let's Get Started 🚀</button>
+    </div>
+  </div>
+
+  <!-- Badge Claim Dialog -->
   <div class="dialog-overlay" id="badge-dialog" onclick="closeBadgeDialog()">
     <div class="dialog-box" onclick="event.stopPropagation()">
       <div class="dialog-icon" id="badge-dialog-icon">❤️</div>
@@ -333,6 +354,7 @@
     </div>
   </div>
 
+  <!-- Quiz Correct Dialog -->
   <div class="dialog-overlay" id="correct-dialog">
     <div class="dialog-box">
       <div class="dialog-icon">✅</div>
@@ -342,6 +364,7 @@
     </div>
   </div>
 
+  <!-- Quiz Wrong Dialog -->
   <div class="dialog-overlay" id="wrong-dialog">
     <div class="dialog-box">
       <div class="dialog-icon">❌</div>
@@ -351,6 +374,7 @@
     </div>
   </div>
 
+  <!-- Redeem QR Dialog -->
   <div class="dialog-overlay" id="qr-dialog">
     <div class="dialog-box">
       <div class="dialog-title" id="qr-dialog-title">Redeem Reward</div>
@@ -363,7 +387,7 @@
     </div>
   </div>
 
-</div>
+</div><!-- /app -->
 <script src="app.js"></script>
 </body>
 </html>

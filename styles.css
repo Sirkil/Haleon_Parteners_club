@@ -716,3 +716,52 @@ a { color: var(--green); text-decoration: none; font-weight: 600; cursor: pointe
   padding: 8px;
 }
 .qr-dialog-code img { display: block; }
+/* ════════════════════════════════════════
+   WELCOME DIALOG EXTRAS
+   ════════════════════════════════════════ */
+#welcome-dialog .dialog-box {
+  background: linear-gradient(160deg, var(--surface) 0%, #0d1a12 100%);
+  border-color: rgba(74,222,128,0.35);
+}
+#welcome-dialog .dialog-title {
+  line-height: 1.25; margin-bottom: 12px;
+}
+
+/* ════════════════════════════════════════
+   LOADING OVERLAY (if not already present)
+   ════════════════════════════════════════ */
+.loading-overlay {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 99999; gap: 20px;
+}
+.loading-logo {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-size: 2.2rem; color: var(--text); letter-spacing: -1px;
+}
+.loading-logo span { color: var(--green); }
+.loading-spinner {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 3px solid var(--border); border-top-color: var(--green);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Auth error */
+.auth-error {
+  color: #f87171; font-size: 0.83rem; min-height: 18px;
+  margin: -4px 0 8px; text-align: center;
+}
+/* Sync status */
+.sync-status {
+  font-size: 0.78rem; color: var(--green); text-align: center;
+  margin-top: 12px; opacity: 0; transition: opacity 0.4s;
+}
+/* QR dialog image container */
+.qr-dialog-code {
+  margin: 16px auto 8px;
+  background: white; border-radius: 12px;
+  width: 196px; height: 196px;
+  display: flex; align-items: center; justify-content: center; padding: 8px;
+}

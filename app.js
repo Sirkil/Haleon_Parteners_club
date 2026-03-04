@@ -58,7 +58,7 @@ const questions = [
 // BOOT — called by Firebase onAuthStateChanged
 // ════════════════════════════════════════
 
-window.bootApp = function(uid, data) {
+window.bootApp = function(uid, data, showWelcome) {
   state.uid              = uid;
   state.user             = data.profile;
   state.score            = data.score            || 0;
@@ -80,6 +80,15 @@ window.bootApp = function(uid, data) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-home').classList.add('active');
   startCarousel();
+  // Show welcome dialog for new registrations
+  if (showWelcome === true && state.user) {
+    document.getElementById('welcome-name').textContent  = '👋 Hi, ' + state.user.name + '!';
+    document.getElementById('welcome-email').textContent = state.user.email;
+    setTimeout(() => {
+      document.getElementById('welcome-dialog').classList.add('open');
+      launchConfetti(4000);
+    }, 400);
+  }
 };
 
 // ════════════════════════════════════════
@@ -89,11 +98,11 @@ window.bootApp = function(uid, data) {
 const tabOrder  = ['home','rewards','profile'];
 let   currentTab = 0;
 
-function showView(id) {
+window.showView = function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const el = document.getElementById(id);
   if (el) el.classList.add('active');
-}
+};
 
 function switchTab(tab) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -138,8 +147,14 @@ async function doLogin() {
 
   btn.textContent = 'Logging in…'; btn.disabled = true;
   try {
-    await window._fb.signInWithEmailAndPassword(window._fb.auth, email, pass);
-    // bootApp is called by onAuthStateChanged
+    const cred = await window._fb.signInWithEmailAndPassword(window._fb.auth, email, pass);
+    // Manually load Firestore doc so bootApp fires reliably
+    const snap = await window._fb.getDoc(window._fb.doc(window._fb.db, 'users', cred.user.uid));
+    if (snap.exists()) {
+      window.bootApp(cred.user.uid, snap.data(), false);
+    } else {
+      errEl.textContent = 'Account data not found. Please contact support.';
+    }
   } catch (e) {
     errEl.textContent = friendlyError(e.code);
   } finally {
@@ -187,8 +202,8 @@ async function doRegister() {
     // Sync to Google Sheets
     syncToSheets(uid, userData);
 
-    // Boot app
-    window.bootApp(uid, userData);
+    // Boot app — pass true to show welcome dialog
+    window.bootApp(uid, userData, true);
 
   } catch (e) {
     errEl.textContent = friendlyError(e.code);
@@ -214,6 +229,8 @@ function friendlyError(code) {
     'auth/invalid-email':        'Please enter a valid email address.',
     'auth/weak-password':        'Password must be at least 6 characters.',
     'auth/too-many-requests':    'Too many attempts. Please try again later.',
+    'auth/invalid-credential':   'Incorrect email or password.',
+    'auth/invalid-login-credentials': 'Incorrect email or password.',
   };
   return map[code] || 'Something went wrong. Please try again.';
 }
@@ -350,6 +367,10 @@ async function tryClaimBadge(id) {
   document.getElementById('badge-dialog').classList.add('open');
   launchConfetti(3000);
   await saveToFirebase();
+}
+
+function closeWelcomeDialog() {
+  document.getElementById('welcome-dialog').classList.remove('open');
 }
 
 function closeBadgeDialog() {

@@ -7,27 +7,24 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 
-  <!-- Firebase (same config as main app) -->
+  <!-- Firebase Firestore -->
   <script type="module">
-    import { initializeApp }                            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, get, update }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { initializeApp }                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // 🔧 SAME CONFIG AS index.html
-  const firebaseConfig = {
-    apiKey: "AIzaSyAmVVQEPpfs_K3AfqfjkAaQUF8foj-WxsU",
-    authDomain: "haleon-partners-club.firebaseapp.com",
-    projectId: "haleon-partners-club",
-    storageBucket: "haleon-partners-club.firebasestorage.app",
-    messagingSenderId: "1037867331058",
-    appId: "1:1037867331058:web:0777855bac1c681ad88f6b"
-  };
+    const firebaseConfig = {
+      apiKey:            "AIzaSyAmVVQEPpfs_K3AfqfjkAaQUF8foj-WxsU",
+      authDomain:        "haleon-partners-club.firebaseapp.com",
+      projectId:         "haleon-partners-club",
+      storageBucket:     "haleon-partners-club.firebasestorage.app",
+      messagingSenderId: "1037867331058",
+      appId:             "1:1037867331058:web:0777855bac1c681ad88f6b"
+    };
 
     const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-
-    window._usherFb = { db, ref, get, update };
+    const db  = getFirestore(app);
+    window._usherFb = { db, doc, getDoc, updateDoc };
   </script>
-
   <style>
     :root {
       --bg:#0a0d0f; --surface:#111418; --surface2:#181c21;
@@ -331,10 +328,10 @@
     try {
       // Fetch live user data from Firebase
       const fb   = window._usherFb;
-      const snap = await fb.get(fb.ref(fb.db, 'users/' + data.uid));
+      const snap = await fb.getDoc(fb.doc(fb.db, 'users', data.uid));
       if (!snap.exists()) { showStatus('error', '❌ Member not found in database.'); return; }
 
-      const userData = snap.val();
+      const userData = snap.data();
       memberCurrentPts = userData.score || 0;
       showResult(data, memberCurrentPts);
     } catch (e) {
@@ -393,10 +390,10 @@
       const pts = parsedData.pts || 0;
 
       // Read current score from Firebase
-      const snap = await fb.get(fb.ref(fb.db, 'users/' + uid));
+      const snap = await fb.getDoc(fb.doc(fb.db, 'users', uid));
       if (!snap.exists()) throw new Error('User not found');
 
-      const current = snap.val().score || 0;
+      const current = snap.data().score || 0;
       if (current < pts) {
         showStatus('error', '⚠ Insufficient points. Redemption cancelled.');
         btn.textContent = '✕ Insufficient Points';
@@ -406,7 +403,7 @@
       const newScore = current - pts;
       const tier = newScore < 100 ? 'Student' : newScore < 300 ? 'Community Pharmacist' : 'Pharmacy Owner';
 
-      await fb.update(fb.ref(fb.db, 'users/' + uid), {
+      await fb.updateDoc(fb.doc(fb.db, 'users', uid), {
         score:       newScore,
         tier,
         lastUpdated: new Date().toISOString(),
